@@ -22,7 +22,7 @@
 			</plugin>
 		</plugins>
 	</build>
-	
+
 	<dependencies>
 		<dependency>
 			<groupId>be.nabu.libs.datatransactions</groupId>
@@ -31,35 +31,14 @@
 		</dependency>
 		<dependency>
 			<groupId>be.nabu.libs.types</groupId>
-			<artifactId>types-api</artifactId>
-			<version>1.0-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>be.nabu.libs.types</groupId>
-			<artifactId>types-base</artifactId>
-			<version>1.0-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>be.nabu.libs.types</groupId>
 			<artifactId>types-java</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>1.1-SNAPSHOT</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>be.nabu.libs.resources</groupId>
 			<artifactId>resources-api</artifactId>
-			<version>1.0-SNAPSHOT</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>be.nabu.libs.converter</groupId>
-			<artifactId>converter-api</artifactId>
-			<version>1.0-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>be.nabu.libs.converter</groupId>
-			<artifactId>converter-base</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<version>1.1-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 </project>
