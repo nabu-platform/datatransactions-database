@@ -24,11 +24,13 @@ public class DatabaseTransactionBatch<T> implements DataTransactionBatch<T> {
 	private String context;
 	private Transactionality transactionality;
 	private ProviderResolver<T> providerResolver;
+	private String handlerId;
 	
-	public DatabaseTransactionBatch(ProviderResolver<T> providerResolver, DatabaseTransactionDAO databaseTransactionDAO, String context, String creatorId, String sourceId, Direction direction, Transactionality transactionality) {
+	public DatabaseTransactionBatch(ProviderResolver<T> providerResolver, DatabaseTransactionDAO databaseTransactionDAO, String context, String creatorId, String sourceId, String handlerId, Direction direction, Transactionality transactionality) {
 		this.providerResolver = providerResolver;
 		this.dao = databaseTransactionDAO;
 		this.context = context;
+		this.handlerId = handlerId;
 		this.creatorId = creatorId == null ? DataTransactionUtils.generateCreatorId() : creatorId;
 		this.sourceId = sourceId;
 		this.direction = direction;
@@ -44,6 +46,7 @@ public class DatabaseTransactionBatch<T> implements DataTransactionBatch<T> {
 		transaction.setContext(context);
 		transaction.setCreatorId(creatorId);
 		transaction.setSourceId(sourceId);
+		transaction.setHandlerId(handlerId);
 		transaction.setBatchId(getId());
 		transaction.setProviderId(providerResolver.getId(provider));
 		transaction.setProperties(properties);

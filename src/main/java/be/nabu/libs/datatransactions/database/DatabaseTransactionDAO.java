@@ -55,6 +55,7 @@ public class DatabaseTransactionDAO {
 		String direction = result.getString("direction");
 		String context = result.getString("context");
 		String sourceId = result.getString("source_id");
+		String handlerId = result.getString("handler_id");
 		String creatorId = result.getString("creator_id");
 		String propertiesTypeId = result.getString("properties_type_id");
 		String transactionality = result.getString("transactionality");
@@ -73,6 +74,7 @@ public class DatabaseTransactionDAO {
 		transaction.setContext(context);
 		transaction.setCreatorId(creatorId);
 		transaction.setSourceId(sourceId);
+		transaction.setHandlerId(handlerId);
 		transaction.setBatchId(batchId);
 		transaction.setProviderId(providerId);
 		transaction.setProperties(properties);
@@ -97,7 +99,7 @@ public class DatabaseTransactionDAO {
 	public List<DataTransaction<?>> getPending(String creatorId, Date from) throws SQLException {
 		Connection connection = getConnection();
 		try {
-			String sql = "select id,batch_id,started,committed,done,state,message,provider_id,request,response,transactionality,direction,context,source_id,creator_id,properties_type_id from data_transactions where creator_id = ? and (";
+			String sql = "select id,batch_id,started,committed,done,state,message,provider_id,request,response,transactionality,direction,context,source_id,handler_id,creator_id,properties_type_id from data_transactions where creator_id = ? and (";
 			// ONE PHASE
 			sql += " (transactionality = ? and state = ? and started >= ?)";
 			// TWO PHASE - START
@@ -160,7 +162,7 @@ public class DatabaseTransactionDAO {
 	public List<DataTransaction<?>> getBatch(String batchId) throws SQLException {
 		Connection connection = getConnection();
 		try {
-			PreparedStatement statement = connection.prepareStatement("select id,batch_id,started,committed,done,state,message,provider_id,request,response,transactionality,direction,context,source_id,creator_id,properties_type_id from data_transactions where batch_id = ?");
+			PreparedStatement statement = connection.prepareStatement("select id,batch_id,started,committed,done,state,message,provider_id,request,response,transactionality,direction,context,source_id,handler_id,creator_id,properties_type_id from data_transactions where batch_id = ?");
 			statement.setString(1, batchId);
 			ResultSet result = statement.executeQuery();
 			List<DataTransaction<?>> transactions = new ArrayList<DataTransaction<?>>();
@@ -195,7 +197,7 @@ public class DatabaseTransactionDAO {
 	public DatabaseTransaction<?> getTransaction(String transactionId) throws SQLException {
 		Connection connection = getConnection();
 		try {
-			PreparedStatement statement = connection.prepareStatement("select id,batch_id,started,committed,done,state,message,provider_id,request,response,transactionality,direction,context,source_id,creator_id,properties_type_id from data_transactions where id = ?");
+			PreparedStatement statement = connection.prepareStatement("select id,batch_id,started,committed,done,state,message,provider_id,request,response,transactionality,direction,context,source_id,handler_id,creator_id,properties_type_id from data_transactions where id = ?");
 			statement.setString(1, transactionId);
 			ResultSet result = statement.executeQuery();
 			DatabaseTransaction<?> transaction = result.next() ? build(connection, result) : null;
@@ -274,8 +276,8 @@ public class DatabaseTransactionDAO {
 	@SuppressWarnings({ "rawtypes" })
 	private void merge(DataTransaction<?> transaction, Connection connection, boolean update) throws SQLException {
 		String sql = update
-			? "update data_transactions set batch_id=?,started=?,committed=?,done=?,state=?,message=?,provider_id=?,request=?,response=?,transactionality=?,direction=?,context=?,source_id=?,creator_id=?,properties_type_id=? where id = ?"
-			: "insert into data_transactions (id,batch_id,started,committed,done,state,message,provider_id,request,response,transactionality,direction,context,source_id,creator_id,properties_type_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+			? "update data_transactions set batch_id=?,started=?,committed=?,done=?,state=?,message=?,provider_id=?,request=?,response=?,transactionality=?,direction=?,context=?,source_id=?,creator_id=?,properties_type_id=?,handler_id=? where id = ?"
+			: "insert into data_transactions (id,batch_id,started,committed,done,state,message,provider_id,request,response,transactionality,direction,context,source_id,creator_id,properties_type_id,handler_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 		PreparedStatement statement = connection.prepareStatement(sql);
 			
@@ -302,6 +304,7 @@ public class DatabaseTransactionDAO {
 		statement.setString(counter++, transaction.getSourceId());
 		statement.setString(counter++, transaction.getCreatorId());
 		statement.setString(counter++, properties != null ? ((DefinedType) properties.getType()).getId() : null);
+		statement.setString(counter++, transaction.getHandlerId());
 		if (update) {
 			statement.setString(counter++, transaction.getId());
 		}

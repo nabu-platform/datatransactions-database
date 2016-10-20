@@ -17,6 +17,8 @@ create table data_transactions (
 	source_id varchar,
 	-- who made the transaction, usually the server name (used for recovery)
 	creator_id varchar,
+	-- the handler used for the result of the transaction
+	handler_id varchar,
 	-- the type id of the properties for this data transaction, it is used to find the type again
 	properties_type_id varchar
 );

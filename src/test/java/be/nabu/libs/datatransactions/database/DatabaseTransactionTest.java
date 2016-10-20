@@ -23,7 +23,7 @@ public class DatabaseTransactionTest {
 		SupposedProperties properties = new SupposedProperties();
 		properties.setSomeValue("testing");
 		DatabaseTransactionProvider provider = new DatabaseTransactionProvider(datasource, TimeZone.getDefault());
-		DataTransactionBatch<String> batch = provider.newBatch(new EmptyProviderResolver<String>(), "test.threePhase", "me", null, Direction.IN, Transactionality.THREE_PHASE);
+		DataTransactionBatch<String> batch = provider.newBatch(new EmptyProviderResolver<String>(), "test.threePhase", "me", null, null, Direction.IN, Transactionality.THREE_PHASE);
 	
 		DataTransactionHandle handle = batch.start("testProvider", properties, null);
 		assertEquals(DataTransactionState.STARTED, provider.getTransaction(handle.getTransaction().getId()).getState());
@@ -48,7 +48,7 @@ public class DatabaseTransactionTest {
 		SupposedProperties properties = new SupposedProperties();
 		properties.setSomeValue("testing");
 		DatabaseTransactionProvider provider = new DatabaseTransactionProvider(datasource, TimeZone.getDefault());
-		DataTransactionBatch<String> batch = provider.newBatch(new EmptyProviderResolver<String>(), "test.twoPhase", "me", null, Direction.IN, Transactionality.TWO_PHASE);
+		DataTransactionBatch<String> batch = provider.newBatch(new EmptyProviderResolver<String>(), "test.twoPhase", "me", null, null, Direction.IN, Transactionality.TWO_PHASE);
 
 		DataTransactionHandle handle = batch.start("testProvider", properties, null);
 		assertEquals(DataTransactionState.STARTED, provider.getTransaction(handle.getTransaction().getId()).getState());
@@ -75,7 +75,7 @@ public class DatabaseTransactionTest {
 		SupposedProperties properties = new SupposedProperties();
 		properties.setSomeValue("testing");
 		DatabaseTransactionProvider provider = new DatabaseTransactionProvider(datasource, TimeZone.getDefault());
-		DataTransactionBatch<String> batch = provider.newBatch(new EmptyProviderResolver<String>(), "test.onePhase", "me", null, Direction.IN, Transactionality.ONE_PHASE);
+		DataTransactionBatch<String> batch = provider.newBatch(new EmptyProviderResolver<String>(), "test.onePhase", "me", null, null, Direction.IN, Transactionality.ONE_PHASE);
 		
 		DataTransactionHandle handle = batch.start("testProvider", properties, null);
 		// should not exist yet
@@ -98,7 +98,7 @@ public class DatabaseTransactionTest {
 		SupposedProperties properties = new SupposedProperties();
 		properties.setSomeValue("testing");
 		DatabaseTransactionProvider provider = new DatabaseTransactionProvider(datasource, TimeZone.getDefault());
-		DataTransactionBatch<String> batch = provider.newBatch(new EmptyProviderResolver<String>(), "test.batch", "me", null, Direction.IN, Transactionality.TWO_PHASE);
+		DataTransactionBatch<String> batch = provider.newBatch(new EmptyProviderResolver<String>(), "test.batch", "me", null, null, Direction.IN, Transactionality.TWO_PHASE);
 		
 		DataTransactionHandle handle1 = batch.start("testProvider", properties, null);
 		DataTransactionHandle handle2 = batch.start("testProvider", properties, null);

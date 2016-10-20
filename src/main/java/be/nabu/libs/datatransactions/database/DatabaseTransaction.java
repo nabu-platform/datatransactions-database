@@ -18,7 +18,7 @@ public class DatabaseTransaction<T> implements DataTransaction<T> {
 	private String message;
 	private String id;
 	private Direction direction;
-	private String sourceId, creatorId;
+	private String sourceId, creatorId, handlerId;
 	private String context;
 	private String batchId;
 	private Transactionality transactionality;
@@ -124,44 +124,52 @@ public class DatabaseTransaction<T> implements DataTransaction<T> {
 	public Transactionality getTransactionality() {
 		return transactionality;
 	}
-
-	void setProviderId(String providerId) {
+	
+	@Override
+	public String getHandlerId() {
+		return handlerId;
+	}
+	public void setHandlerId(String handlerId) {
+		this.handlerId = handlerId;
+	}
+	
+	public void setProviderId(String providerId) {
 		this.providerId = providerId;
 	}
 
-	void setRequest(URI request) {
+	public void setRequest(URI request) {
 		this.request = request;
 	}
 
-	void setCommitted(Date committed) {
+	public void setCommitted(Date committed) {
 		this.committed = committed;
 	}
 
-	void setDone(Date done) {
+	public void setDone(Date done) {
 		this.done = done;
 	}
 
-	void setDirection(Direction direction) {
+	public void setDirection(Direction direction) {
 		this.direction = direction;
 	}
 
-	void setSourceId(String sourceId) {
+	public void setSourceId(String sourceId) {
 		this.sourceId = sourceId;
 	}
 
-	void setCreatorId(String creatorId) {
+	public void setCreatorId(String creatorId) {
 		this.creatorId = creatorId;
 	}
 
-	void setContext(String context) {
+	public void setContext(String context) {
 		this.context = context;
 	}
 
-	void setBatchId(String batchId) {
+	public void setBatchId(String batchId) {
 		this.batchId = batchId;
 	}
 
-	void setTransactionality(Transactionality transactionality) {
+	public void setTransactionality(Transactionality transactionality) {
 		this.transactionality = transactionality;
 	}
 }

@@ -26,8 +26,8 @@ public class DatabaseTransactionProvider implements DataTransactionProvider {
 	}
 	
 	@Override
-	public <T> DataTransactionBatch<T> newBatch(ProviderResolver<T> providerResolver, String context, String creatorId, String sourceId, Direction direction, Transactionality transactionality) {
-		return new DatabaseTransactionBatch<T>(providerResolver, new DatabaseTransactionDAO(dataSource, timezone), context, creatorId, sourceId, direction, transactionality);
+	public <T> DataTransactionBatch<T> newBatch(ProviderResolver<T> providerResolver, String context, String creatorId, String sourceId, String handlerId, Direction direction, Transactionality transactionality) {
+		return new DatabaseTransactionBatch<T>(providerResolver, new DatabaseTransactionDAO(dataSource, timezone), context, creatorId, sourceId, handlerId, direction, transactionality);
 	}
 	
 	@Override
