@@ -63,37 +63,46 @@ public class DatabaseTransactionDAO {
 		ComplexType propertiesType = (ComplexType) DefinedTypeResolverFactory.getInstance().getResolver().resolve(propertiesTypeId);
 		ComplexContent complexContent = propertiesType.newInstance();
 		PreparedStatement statement = connection.prepareStatement("select name,value from data_transaction_properties where data_transaction_id = ?");
-		statement.setString(1, id);
-		ResultSet results = statement.executeQuery();
-		while (results.next()) {
-			complexContent.set(results.getString("name"), results.getString("value"));
+		try {
+			statement.setString(1, id);
+			ResultSet results = statement.executeQuery();
+			try {
+				while (results.next()) {
+					complexContent.set(results.getString("name"), results.getString("value"));
+				}
+				// if it's a bean, cast it to the bean itself
+				Object properties = complexContent instanceof BeanInstance ? TypeUtils.getAsBean(complexContent, ((BeanInstance) complexContent).getType().getBeanClass()) : complexContent;
+				DatabaseTransaction transaction = new DatabaseTransaction();
+				transaction.setContext(context);
+				transaction.setCreatorId(creatorId);
+				transaction.setSourceId(sourceId);
+				transaction.setHandlerId(handlerId);
+				transaction.setBatchId(batchId);
+				transaction.setProviderId(providerId);
+				transaction.setProperties(properties);
+				if (request != null) {
+					transaction.setRequest(new URI(URIUtils.encodeURI(request)));
+				}
+				transaction.setDirection(Enum.valueOf(Direction.class, direction));
+				transaction.setStarted(started);
+				transaction.setCommitted(committed);
+				transaction.setDone(done);
+				transaction.setId(id);
+				if (response != null) {
+					transaction.setResponse(new URI(URIUtils.encodeURI(response)));
+				}
+				transaction.setState(Enum.valueOf(DataTransactionState.class, state));
+				transaction.setMessage(message);
+				transaction.setTransactionality(Enum.valueOf(Transactionality.class, transactionality));
+				return transaction;
+			}
+			finally {
+				results.close();
+			}
 		}
-		// if it's a bean, cast it to the bean itself
-		Object properties = complexContent instanceof BeanInstance ? TypeUtils.getAsBean(complexContent, ((BeanInstance) complexContent).getType().getBeanClass()) : complexContent;
-		DatabaseTransaction transaction = new DatabaseTransaction();
-		transaction.setContext(context);
-		transaction.setCreatorId(creatorId);
-		transaction.setSourceId(sourceId);
-		transaction.setHandlerId(handlerId);
-		transaction.setBatchId(batchId);
-		transaction.setProviderId(providerId);
-		transaction.setProperties(properties);
-		if (request != null) {
-			transaction.setRequest(new URI(URIUtils.encodeURI(request)));
+		finally {
+			statement.close();
 		}
-		transaction.setDirection(Enum.valueOf(Direction.class, direction));
-		transaction.setProperties(propertiesType);
-		transaction.setStarted(started);
-		transaction.setCommitted(committed);
-		transaction.setDone(done);
-		transaction.setId(id);
-		if (response != null) {
-			transaction.setResponse(new URI(URIUtils.encodeURI(response)));
-		}
-		transaction.setState(Enum.valueOf(DataTransactionState.class, state));
-		transaction.setMessage(message);
-		transaction.setTransactionality(Enum.valueOf(Transactionality.class, transactionality));
-		return transaction;
 	}
 	
 	public List<DataTransaction<?>> getPending(String creatorId, Date from) throws SQLException {
@@ -110,29 +119,34 @@ public class DatabaseTransactionDAO {
 			sql += " or (transactionality = ? and (state = ? or state = ?))";
 			sql += ")";
 			
-			PreparedStatement statement = connection.prepareStatement(sql);
-			int counter = 1;
-			statement.setString(counter++, creatorId);
-			// ONE PHASE
-			statement.setString(counter++, Transactionality.ONE_PHASE.name());
-			statement.setString(counter++, DataTransactionState.DONE.name());
-			statement.setTimestamp(counter++, new java.sql.Timestamp(from.getTime()), Calendar.getInstance(timezone));
-			// TWO PHASE - START
-			statement.setString(counter++, Transactionality.TWO_PHASE.name());
-			statement.setString(counter++, DataTransactionState.STARTED.name());
-			// TWO PHASE - DONE
-			statement.setString(counter++, Transactionality.TWO_PHASE.name());
-			statement.setString(counter++, DataTransactionState.DONE.name());
-			statement.setTimestamp(counter++, new java.sql.Timestamp(from.getTime()), Calendar.getInstance(timezone));
-			// THREE PHASE
-			statement.setString(counter++, Transactionality.THREE_PHASE.name());
-			statement.setString(counter++, DataTransactionState.STARTED.name());
-			statement.setString(counter++, DataTransactionState.COMMITTED.name());
-			
-			ResultSet result = statement.executeQuery();
 			List<DataTransaction<?>> transactions = new ArrayList<DataTransaction<?>>();
-			while (result.next()) {
-				transactions.add(build(connection, result));
+			PreparedStatement statement = connection.prepareStatement(sql);
+			try {
+				int counter = 1;
+				statement.setString(counter++, creatorId);
+				// ONE PHASE
+				statement.setString(counter++, Transactionality.ONE_PHASE.name());
+				statement.setString(counter++, DataTransactionState.DONE.name());
+				statement.setTimestamp(counter++, new java.sql.Timestamp(from.getTime()), Calendar.getInstance(timezone));
+				// TWO PHASE - START
+				statement.setString(counter++, Transactionality.TWO_PHASE.name());
+				statement.setString(counter++, DataTransactionState.STARTED.name());
+				// TWO PHASE - DONE
+				statement.setString(counter++, Transactionality.TWO_PHASE.name());
+				statement.setString(counter++, DataTransactionState.DONE.name());
+				statement.setTimestamp(counter++, new java.sql.Timestamp(from.getTime()), Calendar.getInstance(timezone));
+				// THREE PHASE
+				statement.setString(counter++, Transactionality.THREE_PHASE.name());
+				statement.setString(counter++, DataTransactionState.STARTED.name());
+				statement.setString(counter++, DataTransactionState.COMMITTED.name());
+				
+				ResultSet result = statement.executeQuery();
+				while (result.next()) {
+					transactions.add(build(connection, result));
+				}
+			}
+			finally {
+				statement.close();
 			}
 			commit(connection);
 			return transactions;
@@ -162,12 +176,17 @@ public class DatabaseTransactionDAO {
 	public List<DataTransaction<?>> getBatch(String batchId) throws SQLException {
 		Connection connection = getConnection();
 		try {
-			PreparedStatement statement = connection.prepareStatement("select id,batch_id,started,committed,done,state,message,provider_id,request,response,transactionality,direction,context,source_id,handler_id,creator_id,properties_type_id from data_transactions where batch_id = ?");
-			statement.setString(1, batchId);
-			ResultSet result = statement.executeQuery();
 			List<DataTransaction<?>> transactions = new ArrayList<DataTransaction<?>>();
-			while (result.next()) {
-				transactions.add(build(connection, result));
+			PreparedStatement statement = connection.prepareStatement("select id,batch_id,started,committed,done,state,message,provider_id,request,response,transactionality,direction,context,source_id,handler_id,creator_id,properties_type_id from data_transactions where batch_id = ?");
+			try {
+				statement.setString(1, batchId);
+				ResultSet result = statement.executeQuery();
+				while (result.next()) {
+					transactions.add(build(connection, result));
+				}
+			}
+			finally {
+				statement.close();
 			}
 			commit(connection);
 			return transactions;
@@ -197,10 +216,16 @@ public class DatabaseTransactionDAO {
 	public DatabaseTransaction<?> getTransaction(String transactionId) throws SQLException {
 		Connection connection = getConnection();
 		try {
+			DatabaseTransaction<?> transaction;
 			PreparedStatement statement = connection.prepareStatement("select id,batch_id,started,committed,done,state,message,provider_id,request,response,transactionality,direction,context,source_id,handler_id,creator_id,properties_type_id from data_transactions where id = ?");
-			statement.setString(1, transactionId);
-			ResultSet result = statement.executeQuery();
-			DatabaseTransaction<?> transaction = result.next() ? build(connection, result) : null;
+			try {
+				statement.setString(1, transactionId);
+				ResultSet result = statement.executeQuery();
+				transaction = result.next() ? build(connection, result) : null;
+			}
+			finally {
+				statement.close();
+			}
 			commit(connection);
 			return transaction;
 		}
@@ -251,19 +276,24 @@ public class DatabaseTransactionDAO {
 					
 			// next we create records for the properties			
 			PreparedStatement statement = connection.prepareStatement("insert into data_transaction_properties (data_transaction_id, name, value) values (?,?,?)");
-			boolean hasAny = false;
-			for (Element<?> child : TypeUtils.getAllChildren(properties.getType())) {
-				String value = converter.convert(properties.get(child.getName()), String.class);
-				if (value != null) {
-					hasAny = true;
-					statement.setString(1, transaction.getId());
-					statement.setString(2, child.getName());
-					statement.setString(3, value);
-					statement.addBatch();
+			try {
+				boolean hasAny = false;
+				for (Element<?> child : TypeUtils.getAllChildren(properties.getType())) {
+					String value = converter.convert(properties.get(child.getName()), String.class);
+					if (value != null) {
+						hasAny = true;
+						statement.setString(1, transaction.getId());
+						statement.setString(2, child.getName());
+						statement.setString(3, value);
+						statement.addBatch();
+					}
+				}
+				if (hasAny) {
+					statement.executeBatch();
 				}
 			}
-			if (hasAny) {
-				statement.executeBatch();
+			finally {
+				statement.close();
 			}
 			commit(connection);
 		}
@@ -280,36 +310,40 @@ public class DatabaseTransactionDAO {
 			: "insert into data_transactions (id,batch_id,started,committed,done,state,message,provider_id,request,response,transactionality,direction,context,source_id,creator_id,properties_type_id,handler_id) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
 		PreparedStatement statement = connection.prepareStatement(sql);
-			
-		ComplexContent properties = transaction.getProperties() instanceof ComplexContent 
-			? (ComplexContent) transaction.getProperties()
-			: new BeanInstance(transaction.getProperties());
 		
-		int counter = 1;
-		if (!update) {
-			statement.setString(counter++, transaction.getId());
+		try {
+			ComplexContent properties = transaction.getProperties() instanceof ComplexContent 
+				? (ComplexContent) transaction.getProperties()
+				: new BeanInstance(transaction.getProperties());
+			int counter = 1;
+			if (!update) {
+				statement.setString(counter++, transaction.getId());
+			}
+			statement.setString(counter++, transaction.getBatchId());
+			statement.setTimestamp(counter++, new java.sql.Timestamp(transaction.getStarted().getTime()), Calendar.getInstance(timezone));
+			statement.setTimestamp(counter++, transaction.getCommitted() != null ? new java.sql.Timestamp(transaction.getCommitted().getTime()) : null, Calendar.getInstance(timezone));
+			statement.setTimestamp(counter++, transaction.getDone() != null ? new java.sql.Timestamp(transaction.getDone().getTime()) : null, Calendar.getInstance(timezone));
+			statement.setString(counter++, transaction.getState().name());
+			statement.setString(counter++, transaction.getMessage());
+			statement.setString(counter++, transaction.getProviderId());
+			statement.setString(counter++, transaction.getRequest() == null ? null : transaction.getRequest().toString());
+			statement.setString(counter++, transaction.getResponse() == null ? null : transaction.getResponse().toString());
+			statement.setString(counter++, transaction.getTransactionality().name());
+			statement.setString(counter++, transaction.getDirection().name());
+			statement.setString(counter++, transaction.getContext());
+			statement.setString(counter++, transaction.getSourceId());
+			statement.setString(counter++, transaction.getCreatorId());
+			statement.setString(counter++, properties != null ? ((DefinedType) properties.getType()).getId() : null);
+			statement.setString(counter++, transaction.getHandlerId());
+			if (update) {
+				statement.setString(counter++, transaction.getId());
+			}
+			if (statement.executeUpdate() != 1) {
+				throw new SQLException("Could not merge the data transaction");
+			}
 		}
-		statement.setString(counter++, transaction.getBatchId());
-		statement.setTimestamp(counter++, new java.sql.Timestamp(transaction.getStarted().getTime()), Calendar.getInstance(timezone));
-		statement.setTimestamp(counter++, transaction.getCommitted() != null ? new java.sql.Timestamp(transaction.getCommitted().getTime()) : null, Calendar.getInstance(timezone));
-		statement.setTimestamp(counter++, transaction.getDone() != null ? new java.sql.Timestamp(transaction.getDone().getTime()) : null, Calendar.getInstance(timezone));
-		statement.setString(counter++, transaction.getState().name());
-		statement.setString(counter++, transaction.getMessage());
-		statement.setString(counter++, transaction.getProviderId());
-		statement.setString(counter++, transaction.getRequest() == null ? null : transaction.getRequest().toString());
-		statement.setString(counter++, transaction.getResponse() == null ? null : transaction.getResponse().toString());
-		statement.setString(counter++, transaction.getTransactionality().name());
-		statement.setString(counter++, transaction.getDirection().name());
-		statement.setString(counter++, transaction.getContext());
-		statement.setString(counter++, transaction.getSourceId());
-		statement.setString(counter++, transaction.getCreatorId());
-		statement.setString(counter++, properties != null ? ((DefinedType) properties.getType()).getId() : null);
-		statement.setString(counter++, transaction.getHandlerId());
-		if (update) {
-			statement.setString(counter++, transaction.getId());
-		}
-		if (statement.executeUpdate() != 1) {
-			throw new SQLException("Could not merge the data transaction");
+		finally {
+			statement.close();
 		}
 	}
 	
@@ -319,17 +353,23 @@ public class DatabaseTransactionDAO {
 				connection.rollback();
 			}
 		}
-		catch (SQLException e) {
+		catch (Exception e) {
 			// ignore
 		}
-		connection.close();
+		finally {
+			connection.close();
+		}
 	}
 
 	private void commit(Connection connection) throws SQLException {
-		if (!connection.getAutoCommit() && connection.getTransactionIsolation() != Connection.TRANSACTION_NONE) {
-			connection.commit();
+		try {
+			if (!connection.getAutoCommit() && connection.getTransactionIsolation() != Connection.TRANSACTION_NONE) {
+				connection.commit();
+			}
 		}
-		connection.close();
+		finally {
+			connection.close();
+		}
 	}
 	
 	private Connection getConnection() throws SQLException {
